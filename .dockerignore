@@ -1,0 +1,10 @@
+.git
+.github
+node_modules
+**/node_modules
+**/bin
+**/obj
+src-tauri/target
+.env
+.env.*
+!*.example

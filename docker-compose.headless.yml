@@ -1,0 +1,32 @@
+services:
+  steam-game-idler:
+    image: ghcr.io/nekosunevr/steam-game-idler-headless:dev
+    pull_policy: always
+    container_name: steam-game-idler-headless
+    restart: unless-stopped
+    init: true
+    environment:
+      PORT: "8080"
+      WEB_USER: "${WEB_USER:-admin}"
+      WEB_PASSWORD: "${WEB_PASSWORD:?Set WEB_PASSWORD in .env before starting}"
+      SCREEN_SIZE: "${SCREEN_SIZE:-1600x1000x24}"
+    ports:
+      # Loopback by default. Set BIND_ADDRESS to the host's LAN IP for LAN-only access.
+      # Do not expose this port directly to the public internet; use a trusted TLS reverse proxy if needed.
+      - "${BIND_ADDRESS:-127.0.0.1}:8080:8080"
+    volumes:
+      - steam-game-idler-data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+      - /run:size=16m,mode=1777
+      - /var/tmp:size=16m,mode=1777
+    shm_size: 256m
+    stop_grace_period: 30s
+
+volumes:
+  steam-game-idler-data:

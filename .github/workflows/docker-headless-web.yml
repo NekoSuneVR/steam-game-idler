@@ -1,0 +1,55 @@
+name: Validate headless Docker deployment
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docker/headless-web/**"
+      - "docker-compose.headless.yml"
+      - ".dockerignore"
+      - "libs/SteamUtility/**"
+      - "src/**"
+      - "src-tauri/**"
+      - "public/**"
+      - "scripts/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "next.config.*"
+      - "postcss.config.*"
+      - "tsconfig.json"
+      - ".github/workflows/docker-headless-web.yml"
+      - ".github/workflows/publish-headless-docker.yml"
+  push:
+    branches: [feat/docker-headless-web-arm64]
+    paths:
+      - "docker/headless-web/**"
+      - "docker-compose.headless.yml"
+      - "libs/SteamUtility/**"
+      - ".github/workflows/docker-headless-web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/headless-web/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false
+          tags: steam-game-idler-headless:test
