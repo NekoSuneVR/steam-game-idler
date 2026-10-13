@@ -22,7 +22,8 @@ WORKDIR /app
 COPY --from=steam-build /out/ /app/
 COPY docker/headless-web/server.mjs ./server.mjs
 COPY docker/headless-web/public ./public
-RUN mkdir -p /data && chown -R node:node /app /data
+RUN node --check /app/server.mjs && node --check /app/public/app.js \\
+    && mkdir -p /data && chown -R node:node /app /data
 USER node
 EXPOSE 8080
 VOLUME ["/data"]
