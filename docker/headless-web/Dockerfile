@@ -39,8 +39,10 @@ RUN case "${TARGETARCH}" in \
     && test -n "$DEB" \
     && mkdir -p /out/rootfs \
     && dpkg-deb -x "$DEB" /out/rootfs \
-    && test -x /out/rootfs/usr/bin/steam-game-idler \
-    && test -x /out/rootfs/usr/lib/steam-game-idler/libs/SteamUtility
+    && APP_BIN="$(find /out/rootfs/usr/bin -maxdepth 1 -type f -executable -print -quit)" \
+    && test -n "$APP_BIN" \
+    && ln -s "$APP_BIN" /out/rootfs/usr/bin/sgi-docker \
+    && test -n "$(find /out/rootfs/usr/lib -type f -name SteamUtility -print -quit)"
 
 FROM node:22-bookworm-slim AS runtime
 ENV DEBIAN_FRONTEND=noninteractive NODE_ENV=production PORT=8080 \
