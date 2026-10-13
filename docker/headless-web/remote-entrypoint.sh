@@ -24,7 +24,7 @@ COMPOSITOR_PID=$!
 
 # A private virtual X desktop runs the original application. Its own Rust/Tauri command
 # handlers continue to power card farming, achievement tools, inventory, idling and settings.
-dbus-run-session -- /usr/bin/steam-game-idler &
+dbus-run-session -- /usr/bin/sgi-docker &
 APP_PID=$!
 
 x11vnc -display "$DISPLAY" -forever -shared -localhost -nopw -rfbport 5900 -xkb &
