@@ -1,0 +1,153 @@
+name: Build Linux ARM64 portable AppImage
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/linux-arm64-portable
+    paths:
+      - ".github/workflows/build-linux-arm64.yml"
+      - "src-tauri/**"
+      - "libs/**"
+      - "app/**"
+      - "components/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "next.config.*"
+      - "scripts/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-arm64-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux-arm64:
+    name: Build Raspberry Pi ARM64 AppImage
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify native runner architecture
+        run: |
+          set -euxo pipefail
+          test "$(uname -m)" = "aarch64"
+          dpkg --print-architecture | grep -qx arm64
+
+      - name: Install Tauri Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential curl file libayatana-appindicator3-dev libgtk-3-dev \
+            libsecret-1-dev librsvg2-dev libssl-dev libwebkit2gtk-4.1-dev \
+            libxdo-dev patchelf wget
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.17.0
+
+      - name: Set up .NET 8 ARM64
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: linux-arm64-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: linux-arm64-pnpm-
+
+      - name: Cache Cargo
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build ARM64 SteamUtility daemon
+        run: |
+          set -euxo pipefail
+          dotnet publish ./libs/SteamUtility/SteamUtility.csproj \
+            -c Release -r linux-arm64 --self-contained true \
+            -p:PlatformTarget=AnyCPU -p:PublishSingleFile=false -p:PublishTrimmed=true -p:DebugType=none \
+            -o ./src-tauri/libs/
+          test -x ./src-tauri/libs/SteamUtility
+          file ./src-tauri/libs/SteamUtility
+          file ./src-tauri/libs/SteamUtility | grep -Eqi 'ARM aarch64|ARM64'
+
+      - name: Configure build environment
+        env:
+          APP_KEY: ${{ secrets.KEY }}
+        run: |
+          set -euo pipefail
+          printf 'KEY=%s\n' "$APP_KEY" > .env
+          echo "NEXT_TELEMETRY_DISABLED=1" >> "$GITHUB_ENV"
+          echo "TAURI_CI=1" >> "$GITHUB_ENV"
+
+      - name: Build portable ARM64 AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          pnpm tauri build --bundles appimage
+
+      - name: Verify and package portable output
+        run: |
+          set -euxo pipefail
+          shopt -s nullglob
+          images=(src-tauri/target/release/bundle/appimage/*.AppImage)
+          test "${#images[@]}" -eq 1
+          chmod +x "${images[0]}"
+          file "${images[0]}" | tee appimage-file.txt
+          file "${images[0]}" | grep -Eqi 'ARM aarch64|ARM64'
+          mkdir -p dist
+          cp "${images[0]}" dist/
+          cp LICENSE dist/ 2>/dev/null || true
+          tar -C dist -czf steam-game-idler-linux-arm64-portable.tar.gz .
+          sha256sum dist/*.AppImage steam-game-idler-linux-arm64-portable.tar.gz > SHA256SUMS.txt
+
+      - name: Upload portable ARM64 build
+        uses: actions/upload-artifact@v4
+        with:
+          name: steam-game-idler-linux-arm64-portable
+          path: |
+            dist/*
+            steam-game-idler-linux-arm64-portable.tar.gz
+            SHA256SUMS.txt
+            appimage-file.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build summary
+        if: always()
+        run: |
+          {
+            echo "## Linux ARM64 portable build"
+            echo
+            echo "- Runner architecture: $(uname -m)"
+            echo "- .NET runtime: linux-arm64"
+            echo "- Package: AppImage plus portable tar.gz"
+            echo
+            if [ -f appimage-file.txt ]; then
+              echo "### AppImage architecture"
+              echo '~~~'
+              cat appimage-file.txt
+              echo '~~~'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
