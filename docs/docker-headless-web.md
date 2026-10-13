@@ -1,6 +1,6 @@
 # Headless Docker web dashboard (ARM64)
 
-This optional deployment runs the existing SteamKit2-backed `SteamUtility agent` in a container and exposes a small browser dashboard for Steam sign-in and playtime idling. It does not run the Tauri desktop app or require the Steam desktop client.
+The prebuilt multi-platform image is published to GitHub Container Registry (GHCR) by GitHub Actions for the development branch. This optional deployment runs the existing SteamKit2-backed `SteamUtility agent` in a container and exposes a small browser dashboard for Steam sign-in and playtime idling. It does not run the Tauri desktop app or require the Steam desktop client.
 
 ## Current scope
 
@@ -25,7 +25,8 @@ Edit `.env` and set `WEB_PASSWORD` to a unique, random password of at least 12 c
 For access only on the Pi itself, keep `BIND_ADDRESS=127.0.0.1`. To access it from another device on your LAN, set `BIND_ADDRESS` to the Pi's LAN address (for example, `192.168.1.50`). Then run:
 
 ```sh
-docker compose -f docker-compose.headless.yml up -d --build
+docker compose -f docker-compose.headless.yml pull
+docker compose -f docker-compose.headless.yml up -d
 docker compose -f docker-compose.headless.yml logs -f
 ```
 
