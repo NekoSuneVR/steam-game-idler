@@ -2,7 +2,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import net from "node:net";
-import { timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 
 const PORT = Number(process.env.PORT || 8080);
 const WEB_USER = process.env.WEB_USER || "admin";
@@ -10,6 +10,7 @@ const WEB_PASSWORD = process.env.WEB_PASSWORD || "";
 const NOVNC_ROOT = "/usr/share/novnc";
 const WS_HOST = "127.0.0.1";
 const WS_PORT = 6081;
+const WS_TOKEN = randomBytes(32).toString("hex");
 
 if (WEB_PASSWORD.length < 12) {
   console.error("WEB_PASSWORD must be set to at least 12 characters. Refusing to start an unprotected remote desktop.");
@@ -87,7 +88,7 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === "/") {
     headers(res);
-    res.writeHead(302, { location: "/vnc.html?autoconnect=true&resize=scale&path=websockify" });
+    res.writeHead(302, { location: "/vnc.html?autoconnect=true&resize=scale&path=" + encodeURIComponent("websockify?token=" + WS_TOKEN) });
     res.end();
     return;
   }
@@ -130,12 +131,14 @@ const server = http.createServer((req, res) => {
 });
 
 server.on("upgrade", (req, socket, head) => {
-  if (!authorized(req)) {
+  const upgradeUrl = new URL(req.url || "/", "http://localhost");
+  const tokenValid = upgradeUrl.searchParams.get("token") === WS_TOKEN;
+  if (!authorized(req) && !tokenValid) {
     socket.write("HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm=\"Steam Game Idler\"\r\nConnection: close\r\n\r\n");
     socket.destroy();
     return;
   }
-  const url = new URL(req.url || "/", "http://localhost");
+  const url = upgradeUrl;
   if (url.pathname !== "/websockify") {
     socket.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
     socket.destroy();
