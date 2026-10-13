@@ -28,6 +28,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: publish-headless-docker-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: nekosunevr/steam-game-idler-headless
