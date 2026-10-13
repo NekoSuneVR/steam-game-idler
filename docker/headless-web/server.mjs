@@ -107,7 +107,8 @@ function spawnDaemon() {
 }
 function handleMessage(message) {
   if (message.event) {
-    const data = message.payload || {};
+    // SteamUtility's IPC event envelope flattens event payload fields at the top level.
+    const data = message.payload || message;
     switch (message.event) {
       case "status_changed":
         state.loggedOn = Boolean(data.loggedOn);
