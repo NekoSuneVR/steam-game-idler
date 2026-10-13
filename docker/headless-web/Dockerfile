@@ -64,7 +64,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=app-build /out/rootfs/ /
 COPY docker/headless-web/remote-entrypoint.sh /usr/local/bin/remote-entrypoint.sh
 COPY docker/headless-web/server.mjs /app/server.mjs
-RUN chmod 0755 /usr/local/bin/remote-entrypoint.sh && mkdir -p /app && chown -R app:app /app
+RUN chmod 0755 /usr/local/bin/remote-entrypoint.sh && mkdir -p /app && chown -R app:app /app \\
+    && node --check /app/server.mjs \\
+    && bash -n /usr/local/bin/remote-entrypoint.sh
 
 USER app
 EXPOSE 8080
