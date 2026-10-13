@@ -30,7 +30,7 @@ RUN case "${TARGETARCH}" in \
       -o ./src-tauri/libs/ \
     && chmod +x ./src-tauri/libs/SteamUtility \
     && pnpm install --frozen-lockfile \
-    && pnpm exec tauri build --bundles deb \
+    && pnpm exec tauri build --bundles deb --config '{"bundle":{"createUpdaterArtifacts":false}}' \
     && DEB="$(find src-tauri/target/release/bundle/deb -maxdepth 1 -name '*.deb' -print -quit)" \
     && test -n "$DEB" \
     && mkdir -p /out/rootfs \
