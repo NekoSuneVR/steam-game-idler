@@ -2,20 +2,16 @@
 # Full application build: the original Tauri UI and Rust command handlers are retained.
 # The runtime exposes the virtual desktop through authenticated noVNC, rather than replacing
 # the app with a feature-limited HTML dashboard.
-FROM node:22-bookworm AS app-build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS app-build
 ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /src
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates curl wget file build-essential pkg-config cmake \
-      libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
-      libwebkit2gtk-4.1-dev libxdo-dev libsecret-1-dev \
-      dpkg-dev xz-utils \
-    && curl -fsSL https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -o /tmp/msprod.deb \
-    && dpkg -i /tmp/msprod.deb \
-    && apt-get update && apt-get install -y --no-install-recommends dotnet-sdk-8.0 \
-    && rm -rf /var/lib/apt/lists/* /tmp/msprod.deb
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl wget file build-essential pkg-config cmake libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libwebkit2gtk-4.1-dev libxdo-dev libsecret-1-dev dpkg-dev xz-utils gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get update && apt-get install -y --no-install-recommends nodejs \
+    && corepack enable \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal \
     && corepack enable
