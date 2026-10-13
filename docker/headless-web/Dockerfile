@@ -43,13 +43,13 @@ RUN case "${TARGETARCH}" in \
 FROM node:22-bookworm-slim AS runtime
 ENV DEBIAN_FRONTEND=noninteractive NODE_ENV=production PORT=8080 \
     DISPLAY=:99 HOME=/data/home XDG_CONFIG_HOME=/data/config \
-    XDG_DATA_HOME=/data/share XDG_CACHE_HOME=/data/cache
+    XDG_DATA_HOME=/data/share XDG_CACHE_HOME=/data/cache LIBGL_ALWAYS_SOFTWARE=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates libwebkit2gtk-4.1-0 libgtk-3-0 libayatana-appindicator3-1 \
+      bash ca-certificates libwebkit2gtk-4.1-0 libgtk-3-0 libayatana-appindicator3-1 \
       librsvg2-2 libxdo3 libsecret-1-0 libssl3 libdbus-1-3 \
       libx11-6 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
       libxcursor1 libxcomposite1 libxdamage1 libxkbcommon0 libnss3 libasound2 \
-      libgbm1 libdrm2 libegl1 libgl1 libglx0 libwayland-client0 \
+      libgbm1 libdrm2 libegl1 libgl1 libglx0 libgl1-mesa-dri libwayland-client0 \
       libwayland-cursor0 libwayland-egl1 libxshmfence1 libfontconfig1 fonts-liberation \
       xvfb x11vnc xcompmgr openbox novnc websockify dbus-x11 tini \
     && rm -rf /var/lib/apt/lists/* \
