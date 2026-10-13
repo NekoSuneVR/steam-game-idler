@@ -209,6 +209,10 @@ const routes = async (req, res) => {
     const html = fs.readFileSync(path.join(PUBLIC, "index.html"), "utf8");
     return send(res, 200, html, "text/html; charset=utf-8");
   }
+  if (req.method === "GET" && url.pathname === "/app.js") {
+    const script = fs.readFileSync(path.join(PUBLIC, "app.js"), "utf8");
+    return send(res, 200, script, "text/javascript; charset=utf-8");
+  }
   if (req.method === "GET" && url.pathname === "/api/status") {
     return send(res, 200, {
       daemon: state.daemon, loggedOn: state.loggedOn, result: state.result,
