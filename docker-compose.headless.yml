@@ -1,0 +1,31 @@
+services:
+  steam-game-idler:
+    build:
+      context: .
+      dockerfile: docker/headless-web/Dockerfile
+    image: steam-game-idler-headless:local
+    container_name: steam-game-idler-headless
+    restart: unless-stopped
+    init: true
+    environment:
+      PORT: "8080"
+      WEB_USER: "${WEB_USER:-admin}"
+      WEB_PASSWORD: "${WEB_PASSWORD:?Set WEB_PASSWORD in .env before starting}"
+      DATA_DIR: /data
+    ports:
+      # Publish only on the Docker host's LAN-facing address if possible.
+      # For all interfaces, use "8080:8080" and restrict access with your firewall.
+      - "${BIND_ADDRESS:-127.0.0.1}:8080:8080"
+    volumes:
+      - steam-game-idler-data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    stop_grace_period: 20s
+
+volumes:
+  steam-game-idler-data:
