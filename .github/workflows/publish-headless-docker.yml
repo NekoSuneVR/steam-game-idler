@@ -11,6 +11,15 @@ on:
       - "docker/headless-web/**"
       - "docker-compose.headless.yml"
       - "libs/SteamUtility/**"
+      - "src/**"
+      - "src-tauri/**"
+      - "public/**"
+      - "scripts/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "next.config.*"
+      - "postcss.config.*"
+      - "tsconfig.json"
       - ".github/workflows/publish-headless-docker.yml"
   workflow_dispatch:
 
