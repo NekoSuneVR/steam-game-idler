@@ -1,9 +1,7 @@
 services:
   steam-game-idler:
-    build:
-      context: .
-      dockerfile: docker/headless-web/Dockerfile
-    image: steam-game-idler-headless:local
+    image: ghcr.io/nekosunevr/steam-game-idler-headless:dev
+    pull_policy: always
     container_name: steam-game-idler-headless
     restart: unless-stopped
     init: true
@@ -13,8 +11,7 @@ services:
       WEB_PASSWORD: "${WEB_PASSWORD:?Set WEB_PASSWORD in .env before starting}"
       DATA_DIR: /data
     ports:
-      # Publish only on the Docker host's LAN-facing address if possible.
-      # For all interfaces, use "8080:8080" and restrict access with your firewall.
+      # Bind to loopback by default. Set BIND_ADDRESS to the Pi's LAN IP to allow LAN devices.
       - "${BIND_ADDRESS:-127.0.0.1}:8080:8080"
     volumes:
       - steam-game-idler-data:/data
