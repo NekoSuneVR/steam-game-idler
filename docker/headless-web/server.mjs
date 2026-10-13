@@ -88,7 +88,7 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === "/") {
     headers(res);
-    res.writeHead(302, { location: "/vnc.html?autoconnect=true&resize=scale&path=" + encodeURIComponent("websockify?token=" + WS_TOKEN) });
+    res.writeHead(302, {\n      location: "/vnc.html?autoconnect=true&resize=scale&path=websockify",\n      "set-cookie": "sgi_vnc_token=" + WS_TOKEN + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200",\n    });
     res.end();
     return;
   }
