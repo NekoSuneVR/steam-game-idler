@@ -10,6 +10,7 @@ on:
     paths:
       - "docker/headless-web/**"
       - "docker-compose.headless.yml"
+      - ".dockerignore"
       - "libs/SteamUtility/**"
       - "src/**"
       - "src-tauri/**"
