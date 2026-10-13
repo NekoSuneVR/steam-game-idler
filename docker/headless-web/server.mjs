@@ -71,7 +71,7 @@ function send(res, status, body, type = "application/json; charset=utf-8") {
 }
 function fail(res, status, error) { send(res, status, { error }); }
 function spawnDaemon() {
-  daemon = spawn(BIN, ["agent"], { stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, HOME: "/data" } });
+  daemon = spawn(BIN, ["agent"], { stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, HOME: "/tmp" } });
   state.daemon = "running";
   state.result = "Daemon started; sign in to Steam";
   daemon.stdout.setEncoding("utf8");
