@@ -41,7 +41,7 @@ RUN case "${TARGETARCH}" in \
     && dpkg-deb -x "$DEB" /out/rootfs \
     && APP_BIN="$(find /out/rootfs/usr/bin -maxdepth 1 -type f -executable -print -quit)" \
     && test -n "$APP_BIN" \
-    && ln -s "$APP_BIN" /out/rootfs/usr/bin/sgi-docker \
+    && ln -s "$(basename "$APP_BIN")" /out/rootfs/usr/bin/sgi-docker \
     && test -n "$(find /out/rootfs/usr/lib -type f -name SteamUtility -print -quit)"
 
 FROM node:22-bookworm-slim AS runtime
