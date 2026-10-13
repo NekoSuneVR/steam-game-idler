@@ -1,28 +1,33 @@
-# Headless Docker web dashboard (ARM64)
+# Docker deployment with the original Steam Game Idler UI
 
-The prebuilt multi-platform image is published to GitHub Container Registry (GHCR) by GitHub Actions for the development branch. This optional deployment runs the existing SteamKit2-backed `SteamUtility agent` in a container and exposes a small browser dashboard for Steam sign-in and playtime idling. It does not run the Tauri desktop app or require the Steam desktop client.
+This optional Docker deployment builds the **actual Steam Game Idler Tauri application**, including its existing frontend, Rust command handlers and SteamUtility daemon. It does not substitute a reduced HTML dashboard. The application runs in a private virtual Linux desktop, and noVNC streams that desktop to an authenticated browser so the original UI and its existing feature screens remain in place.
 
-## Current scope
+GitHub Actions builds and publishes a multi-platform image to GitHub Container Registry (GHCR) for the development branch:
 
-- Steam username/password sign-in with Steam Guard code support and mobile confirmation prompt.
-- Load owned games and start/stop playtime idling for up to 32 selected app IDs.
-- ARM64 and x86-64 Docker builds.
-- HTTP Basic Authentication on every dashboard/API route.
-- Named volume for operational audit logs. Steam passwords and refresh tokens are not written to disk or logs.
-- Re-authentication is required after a container restart. Credentials and refresh tokens are intentionally not persisted.
-- This is a focused headless idler, not a web port of every Steam Game Idler feature. Desktop-client/Steamworks-dependent features are omitted.
+`ghcr.io/nekosunevr/steam-game-idler-headless:dev`
+
+## Feature compatibility
+
+Because this runs the original app and backend, features that work in the app's Linux Steam-agent mode remain available, including playtime idling, trading-card farming, achievement management/unlocking, inventory management, automatic idling, favorites, settings, account management, and the existing theme/UI customizations.
+
+Important platform differences:
+
+- Sign in with the Steam-agent username/password or QR flow. The Steam desktop client is not installed in the container.
+- Features that specifically require reading or launching a local Steam desktop installation, a local Steam process, system tray integration, native OS autostart, or the desktop updater cannot work as they do on a normal desktop installation.
+- Steam may restrict particular achievement operations for some games, and the application's existing game-specific limitations still apply.
+- The browser is viewing a streamed virtual desktop, not a rewritten responsive web frontend. Set `SCREEN_SIZE` to choose the virtual desktop size.
 
 ## Deploy
 
-From the repository root on your Raspberry Pi (64-bit Raspberry Pi OS or another 64-bit Linux OS with Docker Compose):
+On your Raspberry Pi or Linux server with Docker Compose:
 
 ```sh
 cp docker/headless-web/.env.example .env
 ```
 
-Edit `.env` and set `WEB_PASSWORD` to a unique, random password of at least 12 characters. Keep the file private.
+Edit `.env` and set `WEB_PASSWORD` to a unique random password of at least 12 characters. Keep the file private.
 
-For access only on the Pi itself, keep `BIND_ADDRESS=127.0.0.1`. To access it from another device on your LAN, set `BIND_ADDRESS` to the Pi's LAN address (for example, `192.168.1.50`). Then run:
+For access only on the server, leave `BIND_ADDRESS=127.0.0.1`. To access it from another device on your trusted LAN, set `BIND_ADDRESS` to the server's LAN IP address. Then run:
 
 ```sh
 docker compose -f docker-compose.headless.yml pull
@@ -30,21 +35,25 @@ docker compose -f docker-compose.headless.yml up -d
 docker compose -f docker-compose.headless.yml logs -f
 ```
 
-Open `http://<pi-lan-address>:8080` from a device on the same trusted network. The browser prompts for the dashboard username/password configured in `.env`.
+Open `http://<server-lan-address>:8080`. Your browser will prompt for the `WEB_USER` and `WEB_PASSWORD` from `.env`, then open the original Steam Game Idler interface.
 
-The container binds to loopback by default on purpose. Do not set `BIND_ADDRESS=0.0.0.0` unless you understand your host firewall and LAN exposure. Do not forward port 8080 to the public internet. HTTP Basic Authentication does not encrypt traffic; use a trusted LAN or terminate HTTPS with a reverse proxy if your environment requires it.
+The published image targets `linux/arm64` and `linux/amd64`. On first boot, the app initializes its normal configuration under the persistent `/data` volume.
 
-## Data and operations
+## Security and persistence
 
-- The named volume `steam-game-idler-data` stores a small audit log at `/data/events.log`. It does not store Steam credentials or refresh tokens.
-- `docker compose -f docker-compose.headless.yml logs -f` shows service logs.
-- `docker compose -f docker-compose.headless.yml down` stops and removes the container; the named volume remains.
-- To delete the persistent audit log volume too, run `docker volume rm <compose-project>_steam-game-idler-data` after stopping the service.
-- The container runs as an unprivileged user, drops Linux capabilities, uses a read-only root filesystem, and has no Docker socket mount.
+- The gateway requires HTTP Basic Authentication for the UI assets and WebSocket connection.
+- The VNC server and WebSocket bridge listen only on container loopback; only the authenticated gateway is published.
+- The app runs as an unprivileged user. The container drops Linux capabilities, uses a read-only root filesystem, and has no Docker socket mount.
+- `/data` persists application settings, caches and account data created by the original application. Treat this volume as sensitive and protect backups accordingly.
+- Bind to loopback by default. Do not forward port 8080 to the public internet. Basic Authentication does not encrypt HTTP traffic; use a trusted LAN or terminate HTTPS with a trusted reverse proxy when traffic crosses an untrusted network.
+- Use a dedicated Steam account for initial testing and enable Steam Guard. This is an experimental container deployment and is not a substitute for a tested desktop install.
 
-## Troubleshooting
+## Operations
 
-- If sign-in needs an authenticator, enter the Steam Guard code on the dashboard. If Steam requests mobile approval, approve it in the Steam app and leave the dashboard open.
-- If the dashboard cannot load games, check container logs and verify the account can access its owned games through Steam.
-- If Docker build fails on an ARM device, check that the OS and Docker engine are 64-bit.
-- This is a new headless integration path and should be validated with a test Steam account before relying on it for long-running sessions.
+```sh
+docker compose -f docker-compose.headless.yml logs -f
+docker compose -f docker-compose.headless.yml restart
+docker compose -f docker-compose.headless.yml down
+```
+
+The named volume `steam-game-idler-data` remains after `down`. Remove it only if you intend to delete the app's persistent settings and account data too.
